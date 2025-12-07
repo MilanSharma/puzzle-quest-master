@@ -99,11 +99,13 @@ class MonetizationManager: ObservableObject {
     func purchaseBoosterPack(_ name: String, quantity: Int, price: Double) {}
 }
 
+// MARK: - Ad Manager
 
 class AdManager: NSObject, ObservableObject {
     @Published var interstitialAdLoaded: Bool = false
     private var interstitial: GADInterstitialAd?
     
+    // Test ID. Replace with Real ID in Info.plist before release.
     private let adUnitID = "ca-app-pub-3940256099942544/4411468910"
     
     override init() {
@@ -144,6 +146,7 @@ class AdManager: NSObject, ObservableObject {
     }
 }
 
+// MARK: - Cloud Save Manager
 
 class CloudSaveManager {
     static let shared = CloudSaveManager()

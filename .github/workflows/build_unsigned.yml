@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Build Unsigned IPA
-    runs-on: macos-13 # Uses a free Mac runner provided by GitHub
+    runs-on: macos-13
 
     steps:
       - name: Checkout Repository
@@ -19,11 +19,17 @@ jobs:
         with:
           xcode-version: '15.2'
 
+      - name: Install Cocoapods
+        run: |
+          gem install cocoapods
+          cd PuzzleQuestMaster
+          pod install
+
       - name: Build App (Unsigned)
         run: |
-          # 1. Build the app for Generic iOS Device (ARM64) without signing
+          # Note: We now build the .xcworkspace (created by pods) instead of .xcodeproj
           xcodebuild build \
-            -project PuzzleQuestMaster/PuzzleQuestMaster.xcodeproj \
+            -workspace PuzzleQuestMaster/PuzzleQuestMaster.xcworkspace \
             -scheme PuzzleQuestMaster \
             -sdk iphoneos \
             -configuration Release \
@@ -35,11 +41,8 @@ jobs:
 
       - name: Package into IPA
         run: |
-          # 2. Create the standard IPA folder structure manually
           mkdir -p Payload
           mv build/Build/Products/Release-iphoneos/PuzzleQuestMaster.app Payload/
-          
-          # 3. Zip it (IPA files are just renamed ZIPs)
           zip -r PuzzleQuestMaster.ipa Payload
 
       - name: Upload IPA
