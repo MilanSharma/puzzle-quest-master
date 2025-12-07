@@ -1,9 +1,8 @@
-
 import SwiftUI
 import Combine
 
 struct GamePiece: Identifiable, Codable, Equatable {
-    let id = UUID()
+    var id = UUID() // Changed from let to var
     let type: PieceType
     var value: Int
     static func == (lhs: GamePiece, rhs: GamePiece) -> Bool { return lhs.id == rhs.id && lhs.type == rhs.type }
@@ -51,20 +50,19 @@ struct BoosterInventory: Codable { var bomb = 3; var shuffle = 3; var lightning 
 enum BoosterType { case bomb, shuffle, lightning, target }
 
 struct Reward: Identifiable, Codable {
-    let id = UUID(); let type: RewardType; let amount: Int; let icon: String; let title: String; let description: String
+    var id = UUID(); let type: RewardType; let amount: Int; let icon: String; let title: String; let description: String
 }
 enum RewardType: String, CaseIterable, Codable { case gems, coins, booster, character }
 
 struct DailyChallenge: Identifiable, Codable {
-    let id = UUID(); let title: String; let description: String; let icon: String; let target: Int; var progress: Int; var isCompleted: Bool; let reward: Reward
+    var id = UUID(); let title: String; let description: String; let icon: String; let target: Int; var progress: Int; var isCompleted: Bool; let reward: Reward
 }
 struct Achievement: Identifiable, Codable {
-    let id = UUID(); let title: String; let description: String; let icon: String; let target: Int; var progress: Int; var isCompleted: Bool; let reward: Reward?
+    var id = UUID(); let title: String; let description: String; let icon: String; let target: Int; var progress: Int; var isCompleted: Bool; let reward: Reward?
 }
 
-// CRITICAL FIX: Purchase Struct Defined Here
 struct Purchase: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     let title: String
     let amount: Double
     let date: String
