@@ -8,26 +8,24 @@ on:
 jobs:
   build:
     name: Build Unsigned IPA
-    runs-on: macos-13
+    runs-on: macos-latest # Switches to the newest stable macOS (Sonoma/Sequoia)
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.2'
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
 
       - name: Install Cocoapods
         run: |
           gem install cocoapods
           cd PuzzleQuestMaster
-          pod install
+          pod install --repo-update
 
       - name: Build App (Unsigned)
         run: |
-          # Note: We now build the .xcworkspace (created by pods) instead of .xcodeproj
+          # Build the Workspace (created by CocoaPods)
           xcodebuild build \
             -workspace PuzzleQuestMaster/PuzzleQuestMaster.xcworkspace \
             -scheme PuzzleQuestMaster \
