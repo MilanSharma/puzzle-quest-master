@@ -1,3 +1,4 @@
+
 import SwiftUI
 import Combine
 
@@ -61,7 +62,7 @@ struct Achievement: Identifiable, Codable {
     let id = UUID(); let title: String; let description: String; let icon: String; let target: Int; var progress: Int; var isCompleted: Bool; let reward: Reward?
 }
 
-// MISSING STRUCT ADDED HERE
+// CRITICAL FIX: Purchase Struct Defined Here
 struct Purchase: Identifiable, Codable {
     let id = UUID()
     let title: String
@@ -124,7 +125,6 @@ class GameManager: ObservableObject {
     }
     
     private func processMatches() {
-        // Simple match logic for compilation
         if movesLeft <= 0 { gameState = .gameOver }
         else if currentScore >= targetScore { completeLevel() }
         else { dropPieces() }
@@ -139,16 +139,12 @@ class GameManager: ObservableObject {
         }
     }
     
-    func useBooster(_ type: BoosterType) {
-         // Logic placeholder
-    }
-    
+    func useBooster(_ type: BoosterType) {}
     func restartLevel() { currentScore = 0; movesLeft = 30; setupGameBoard() }
     func nextLevel() { currentLevel += 1; targetScore += 500; restartLevel() }
     func getPiece(at r: Int, col c: Int) -> GamePiece? { return gameBoard[r][c] }
     func completeLevel() { gameState = .levelComplete; player.completedLevels += 1 }
     func getLevelRewards() -> [Reward] { return [Reward(type: .gems, amount: 50, icon: "💎", title: "Win", description: "Win")] }
-    
     var completedAchievements: Int { 0 }; var totalAchievements: Int { 5 }; var levelsToNextLevel: Int { 5 }
     func updateNotificationSetting(_ val: Bool) {}; func updateSoundSetting(_ val: Bool) {}; func updateVibrationSetting(_ val: Bool) {}
 }

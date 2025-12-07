@@ -1,3 +1,4 @@
+
 import Foundation
 import StoreKit
 import SwiftUI
@@ -9,6 +10,19 @@ extension Notification.Name {
     static let didPurchasePass = Notification.Name("didPurchasePass")
 }
 
+// Structs for Shop
+struct GemPackage: Identifiable {
+    let id = UUID()
+    let gems: Int
+    let bonus: Int
+    let price: Double
+    let originalPrice: Double?
+    let description: String
+    let isBestValue: Bool
+    let isLimitedTime: Bool
+}
+enum RoyalPassPlan { case monthly, yearly; var priceString: String { self == .monthly ? "$9.99/mo" : "$99.99/yr" } }
+
 class MonetizationManager: ObservableObject {
     @Published var gemPackages: [GemPackage] = []
     @Published var recentPurchases: [Purchase] = []
@@ -17,12 +31,9 @@ class MonetizationManager: ObservableObject {
     @Published var hasActiveSubscription = false
     @Published var showRoyalPassOffer = false
     
-    init() { setupGemPackages() }
-    
-    private func setupGemPackages() {
+    init() {
         gemPackages = [GemPackage(gems: 100, bonus: 0, price: 0.99, originalPrice: nil, description: "Small", isBestValue: false, isLimitedTime: false)]
     }
-    
     func purchaseGemPackage(_ package: GemPackage) { print("Purchased \(package.gems)") }
     func purchaseBoosterPack(_ name: String, quantity: Int, price: Double) {}
     func purchaseRoyalPass(plan: RoyalPassPlan) {}
@@ -40,7 +51,6 @@ class AdManager: NSObject, ObservableObject {
     
     func loadInterstitial() {
         let request = GADRequest()
-        // FIXED SYNTAX: load(withAdUnitID: ...)
         GADInterstitialAd.load(withAdUnitID: "ca-app-pub-3940256099942544/4411468910", request: request) { [weak self] ad, error in
             if let error = error { print("Ad Error: \(error)"); return }
             self?.interstitial = ad
@@ -53,14 +63,15 @@ class AdManager: NSObject, ObservableObject {
               let root = windowScene.windows.first?.rootViewController,
               let ad = interstitial else { return }
         
-        // FIXED SYNTAX: present(fromRootViewController:)
         ad.present(fromRootViewController: root)
         loadInterstitial()
     }
     
     func requestTracking() {
-        if #available(iOS 14, *) {
-            ATTrackingManager.requestTrackingAuthorization { _ in }
-        }
+        if #available(iOS 14, *) { ATTrackingManager.requestTrackingAuthorization { _ in } }
     }
+}
+
+class CloudSaveManager {
+    static let shared = CloudSaveManager(); func initialize() {}
 }
