@@ -132,7 +132,7 @@ struct GameHUDView: View {
                         .font(.title3)
                         .fontWeight(.bold)
                 }
-                .foregroundColor(moves < 5 ? .red : .white)
+                .foregroundColor(moves < 5 ? .error500 : .white)
                 .padding(8)
                 .background(Color.black.opacity(0.3))
                 .cornerRadius(12)
@@ -219,6 +219,7 @@ struct BoosterButton: View {
                 }
             }
         }
+        .buttonStyle(BounceButtonStyle())
     }
 }
 
@@ -246,14 +247,15 @@ struct LevelCompleteOverlay: View {
                 Button(action: onNext) {
                     Text("Next Level")
                         .font(.headline)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.primaryBlue)
                         .padding()
                         .frame(width: 200)
                         .background(Color.white)
                         .cornerRadius(25)
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
-            .padding().background(Color.blue).cornerRadius(20).padding(40)
+            .padding().background(Color.primaryBlueDark).cornerRadius(20).padding(40)
         }
     }
 }
@@ -276,11 +278,12 @@ struct GameOverOverlay: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(width: 200)
-                        .background(Color.red)
+                        .background(Color.error500)
                         .cornerRadius(25)
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
-            .padding().background(Color.gray).cornerRadius(20).padding(40)
+            .padding().background(Color.neutral900).cornerRadius(20).padding(40)
         }
     }
 }
