@@ -25,7 +25,6 @@ struct GameScreenView: View {
                 // Board Area
                 GeometryReader { geometry in
                     let width = geometry.size.width - 32
-                    // We extract the complex grid into a separate View struct to fix compiler timeout errors
                     BoardGridView(
                         gameManager: gameManager,
                         rows: rows,
@@ -41,7 +40,9 @@ struct GameScreenView: View {
                 
                 // Boosters
                 BoostersView(boosters: gameManager.player.boosters) { type in
-                    gameManager.useBooster(type)
+                    withAnimation {
+                        gameManager.useBooster(type)
+                    }
                 }
             }
             
@@ -83,7 +84,9 @@ struct BoardGridView: View {
                             size: itemSize
                         )
                         .onTapGesture {
-                            gameManager.handleTileTap(row: row, col: col)
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                gameManager.handleTileTap(row: row, col: col)
+                            }
                         }
                     }
                 }
@@ -132,7 +135,7 @@ struct GameHUDView: View {
                         .font(.title3)
                         .fontWeight(.bold)
                 }
-                .foregroundColor(moves < 5 ? .error500 : .white)
+                .foregroundColor(moves < 5 ? .red : .white)
                 .padding(8)
                 .background(Color.black.opacity(0.3))
                 .cornerRadius(12)
@@ -180,7 +183,6 @@ struct TileView: View {
                 .stroke(Color.white, lineWidth: isSelected ? 3 : 0)
         )
         .scaleEffect(isSelected ? 1.1 : 1.0)
-        .animation(.spring(response: 0.3), value: isSelected)
     }
     
     func colorForPiece(_ type: PieceType) -> Color {
@@ -219,7 +221,6 @@ struct BoosterButton: View {
                 }
             }
         }
-        .buttonStyle(BounceButtonStyle())
     }
 }
 
@@ -247,15 +248,14 @@ struct LevelCompleteOverlay: View {
                 Button(action: onNext) {
                     Text("Next Level")
                         .font(.headline)
-                        .foregroundColor(.primaryBlue)
+                        .foregroundColor(.blue)
                         .padding()
                         .frame(width: 200)
                         .background(Color.white)
                         .cornerRadius(25)
                 }
-                .buttonStyle(ScaleButtonStyle())
             }
-            .padding().background(Color.primaryBlueDark).cornerRadius(20).padding(40)
+            .padding().background(Color.blue).cornerRadius(20).padding(40)
         }
     }
 }
@@ -278,12 +278,11 @@ struct GameOverOverlay: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(width: 200)
-                        .background(Color.error500)
+                        .background(Color.red)
                         .cornerRadius(25)
                 }
-                .buttonStyle(ScaleButtonStyle())
             }
-            .padding().background(Color.neutral900).cornerRadius(20).padding(40)
+            .padding().background(Color.gray).cornerRadius(20).padding(40)
         }
     }
 }

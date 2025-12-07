@@ -1,8 +1,9 @@
+
 import SwiftUI
 import Combine
 
 struct GamePiece: Identifiable, Codable, Equatable {
-    var id = UUID() // Changed from let to var
+    var id = UUID()
     let type: PieceType
     var value: Int
     static func == (lhs: GamePiece, rhs: GamePiece) -> Bool { return lhs.id == rhs.id && lhs.type == rhs.type }
@@ -77,11 +78,22 @@ enum Difficulty: String, CaseIterable, Codable { case easy, medium, hard }
 enum ControlType: String, CaseIterable, Codable { case touch, swipe }
 
 class GameManager: ObservableObject {
-    @Published var currentLevel = 1; @Published var currentScore = 0; @Published var targetScore = 1000; @Published var movesLeft = 30; @Published var gameState: GameState = .playing; @Published var levelProgress = 0; @Published var starsEarned = 0
-    @Published var player = Player(); @Published var settings = Settings()
+    @Published var currentLevel = 1
+    @Published var currentScore = 0
+    @Published var targetScore = 1000
+    @Published var movesLeft = 30
+    @Published var gameState: GameState = .playing
+    @Published var levelProgress = 0
+    @Published var starsEarned = 0
+    @Published var player = Player()
+    @Published var settings = Settings()
     @Published var gameBoard: [[GamePiece?]] = Array(repeating: Array(repeating: nil, count: 8), count: 8)
     @Published var selectedPosition: (Int, Int)? = nil
-    @Published var dailyChallenges: [DailyChallenge] = []; @Published var achievements: [Achievement] = []
+    @Published var dailyChallenges: [DailyChallenge] = []
+    @Published var achievements: [Achievement] = []
+    
+    // Track processing state to prevent interactions during cascades
+    @Published var isProcessing = false
     
     init() {
         self.dailyChallenges = [DailyChallenge(title: "Play 5 Levels", description: "Complete 5 levels", icon: "🎮", target: 5, progress: 2, isCompleted: false, reward: Reward(type: .gems, amount: 50, icon: "💎", title: "50 Gems", description: "Reward"))]
@@ -89,55 +101,247 @@ class GameManager: ObservableObject {
         setupGameBoard()
     }
     
-    func setupGameBoard() { repeat { fillBoardRandomly() } while hasMatches(); gameState = .playing }
-    private func fillBoardRandomly() { for r in 0..<8 { for c in 0..<8 { gameBoard[r][c] = GamePiece(type: PieceType.allCases.randomElement()!, value: 10) } } }
+    func setupGameBoard() {
+        repeat { fillBoardRandomly() } while hasMatches()
+        gameState = .playing
+        movesLeft = 30
+        currentScore = 0
+    }
+    
+    private func fillBoardRandomly() {
+        for r in 0..<8 {
+            for c in 0..<8 {
+                gameBoard[r][c] = GamePiece(type: PieceType.allCases.randomElement()!, value: 10)
+            }
+        }
+    }
     
     func handleTileTap(row: Int, col: Int) {
-        guard gameState == .playing else { return }
+        guard gameState == .playing, !isProcessing else { return }
+        
         if let selected = selectedPosition {
-            if selected == (row, col) { selectedPosition = nil }
-            else if isAdjacent(from: selected, to: (row, col)) { attemptSwap(from: selected, to: (row, col)) }
-            else { selectedPosition = (row, col) }
-        } else { selectedPosition = (row, col) }
+            if selected == (row, col) {
+                selectedPosition = nil // Deselect
+            } else if isAdjacent(from: selected, to: (row, col)) {
+                attemptSwap(from: selected, to: (row, col))
+            } else {
+                selectedPosition = (row, col) // Change selection
+            }
+        } else {
+            selectedPosition = (row, col) // Select
+        }
     }
     
     private func isAdjacent(from: (Int, Int), to: (Int, Int)) -> Bool {
-        let rDiff = abs(from.0 - to.0); let cDiff = abs(from.1 - to.1)
+        let rDiff = abs(from.0 - to.0)
+        let cDiff = abs(from.1 - to.1)
         return (rDiff == 1 && cDiff == 0) || (rDiff == 0 && cDiff == 1)
     }
     
     private func attemptSwap(from: (Int, Int), to: (Int, Int)) {
+        selectedPosition = nil
+        isProcessing = true
+        
+        // 1. Swap
         swapPieces(from, to)
-        if hasMatches() { movesLeft -= 1; selectedPosition = nil; processMatches() }
-        else { swapPieces(from, to); selectedPosition = nil }
+        
+        // 2. Check for matches
+        if hasMatches() {
+            movesLeft -= 1
+            // Process the match with a slight delay to let the swap animation play
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.processMatches()
+            }
+        } else {
+            // Invalid move - swap back after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.swapPieces(from, to)
+                self.isProcessing = false
+            }
+        }
     }
     
     private func swapPieces(_ p1: (Int, Int), _ p2: (Int, Int)) {
-        let temp = gameBoard[p1.0][p1.1]; gameBoard[p1.0][p1.1] = gameBoard[p2.0][p2.1]; gameBoard[p2.0][p2.1] = temp
+        let temp = gameBoard[p1.0][p1.1]
+        gameBoard[p1.0][p1.1] = gameBoard[p2.0][p2.1]
+        gameBoard[p2.0][p2.1] = temp
     }
     
     private func hasMatches() -> Bool {
-        for r in 0..<8 { for c in 0..<6 { if let p1=gameBoard[r][c], let p2=gameBoard[r][c+1], let p3=gameBoard[r][c+2], p1.type==p2.type && p2.type==p3.type { return true } } }
-        for c in 0..<8 { for r in 0..<6 { if let p1=gameBoard[r][c], let p2=gameBoard[r+1][c], let p3=gameBoard[r+2][c], p1.type==p2.type && p2.type==p3.type { return true } } }
-        return false
+        return !findMatches().isEmpty
+    }
+    
+    private func findMatches() -> Set<String> {
+        var matchedIndices = Set<String>()
+        
+        // Horizontal
+        for r in 0..<8 {
+            for c in 0..<6 {
+                if let p1 = gameBoard[r][c], let p2 = gameBoard[r][c+1], let p3 = gameBoard[r][c+2],
+                   p1.type == p2.type && p2.type == p3.type {
+                    matchedIndices.insert("\(r),\(c)")
+                    matchedIndices.insert("\(r),\(c+1)")
+                    matchedIndices.insert("\(r),\(c+2)")
+                }
+            }
+        }
+        
+        // Vertical
+        for c in 0..<8 {
+            for r in 0..<6 {
+                if let p1 = gameBoard[r][c], let p2 = gameBoard[r+1][c], let p3 = gameBoard[r+2][c],
+                   p1.type == p2.type && p2.type == p3.type {
+                    matchedIndices.insert("\(r),\(c)")
+                    matchedIndices.insert("\(r+1),\(c)")
+                    matchedIndices.insert("\(r+2),\(c)")
+                }
+            }
+        }
+        
+        return matchedIndices
     }
     
     private func processMatches() {
-        if movesLeft <= 0 { gameState = .gameOver }
-        else if currentScore >= targetScore { completeLevel() }
-        else { dropPieces() }
+        let matches = findMatches()
+        
+        if matches.isEmpty {
+            isProcessing = false
+            if movesLeft <= 0 { gameState = .gameOver }
+            else if currentScore >= targetScore { completeLevel() }
+            return
+        }
+        
+        // Remove pieces
+        for index in matches {
+            let components = index.split(separator: ",").map { Int($0)! }
+            gameBoard[components[0]][components[1]] = nil
+        }
+        
+        currentScore += matches.count * 10
+        
+        // Drop and refill after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            self.dropPieces()
+            
+            // Recursively check for new matches
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                self.processMatches()
+            }
+        }
     }
     
     private func dropPieces() {
         for c in 0..<8 {
             var newCol: [GamePiece] = []
-            for r in 0..<8 { if let p = gameBoard[r][c] { newCol.append(p) } }
-            while newCol.count < 8 { newCol.insert(GamePiece(type: PieceType.allCases.randomElement()!, value: 10), at: 0) }
-            for r in 0..<8 { gameBoard[r][c] = newCol[r] }
+            // Collect existing
+            for r in 0..<8 {
+                if let p = gameBoard[r][c] { newCol.append(p) }
+            }
+            // Fill top with new random
+            while newCol.count < 8 {
+                newCol.insert(GamePiece(type: PieceType.allCases.randomElement()!, value: 10), at: 0)
+            }
+            // Update board
+            for r in 0..<8 {
+                gameBoard[r][c] = newCol[r]
+            }
         }
     }
     
-    func useBooster(_ type: BoosterType) {}
+    // MARK: - Boosters
+    
+    func useBooster(_ type: BoosterType) {
+        guard gameState == .playing, !isProcessing else { return }
+        
+        var used = false
+        switch type {
+        case .bomb:
+            if player.boosters.bomb > 0 {
+                player.boosters.bomb -= 1
+                activateBomb()
+                used = true
+            }
+        case .shuffle:
+            if player.boosters.shuffle > 0 {
+                player.boosters.shuffle -= 1
+                activateShuffle()
+                used = true
+            }
+        case .lightning:
+            if player.boosters.lightning > 0 {
+                player.boosters.lightning -= 1
+                activateLightning()
+                used = true
+            }
+        case .target:
+            if player.boosters.target > 0 {
+                player.boosters.target -= 1
+                activateTarget()
+                used = true
+            }
+        }
+        
+        if used {
+            // Check if booster caused matches
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.processMatches()
+            }
+        }
+    }
+    
+    private func activateBomb() {
+        // Destroy random 3x3 area or random 5 pieces
+        for _ in 0..<5 {
+            let r = Int.random(in: 0..<8)
+            let c = Int.random(in: 0..<8)
+            gameBoard[r][c] = nil
+        }
+        dropPieces()
+    }
+    
+    private func activateShuffle() {
+        var flatList: [GamePiece] = []
+        for r in 0..<8 {
+            for c in 0..<8 {
+                if let p = gameBoard[r][c] { flatList.append(p) }
+            }
+        }
+        flatList.shuffle()
+        var idx = 0
+        for r in 0..<8 {
+            for c in 0..<8 {
+                if idx < flatList.count {
+                    gameBoard[r][c] = flatList[idx]
+                    idx += 1
+                }
+            }
+        }
+    }
+    
+    private func activateLightning() {
+        // Remove all pieces of a random type
+        let typeToRemove = PieceType.allCases.randomElement()!
+        for r in 0..<8 {
+            for c in 0..<8 {
+                if gameBoard[r][c]?.type == typeToRemove {
+                    gameBoard[r][c] = nil
+                }
+            }
+        }
+        dropPieces()
+    }
+    
+    private func activateTarget() {
+        // If something selected, remove it. Else remove center.
+        if let s = selectedPosition {
+            gameBoard[s.0][s.1] = nil
+            selectedPosition = nil
+        } else {
+            gameBoard[4][4] = nil
+        }
+        dropPieces()
+    }
+    
     func restartLevel() { currentScore = 0; movesLeft = 30; setupGameBoard() }
     func nextLevel() { currentLevel += 1; targetScore += 500; restartLevel() }
     func getPiece(at r: Int, col c: Int) -> GamePiece? { return gameBoard[r][c] }
