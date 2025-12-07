@@ -17,7 +17,7 @@ struct PuzzleQuestMasterApp: App {
                 .onAppear {
                     CloudSaveManager.shared.initialize()
                 }
-                .onChange(of: scenePhase) { oldPhase, newPhase in
+                .onChange(of: scenePhase) { _, newPhase in
                     if newPhase == .active {
                         adManager.requestTracking()
                     }
