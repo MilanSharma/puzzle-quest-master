@@ -24,12 +24,9 @@ jobs:
 
       - name: Fix Duplicate Info.plist Error
         run: |
-          # -------------------------------------------------------------------------
-          # THE FIX: Remove Info.plist from the 'Copy Bundle Resources' build phase.
-          # Xcode processes Info.plist automatically via settings; copying it manually causes the duplicate error.
-          # -------------------------------------------------------------------------
+          # Remove Info.plist from the 'Copy Bundle Resources' build phase.
           sed -i '' '/Info\.plist in Resources/d' PuzzleQuestMaster.xcodeproj/project.pbxproj
-          print "Removed duplicate Info.plist references from project file."
+          echo "Removed duplicate Info.plist references from project file."
 
       - name: Install Pods
         run: |
