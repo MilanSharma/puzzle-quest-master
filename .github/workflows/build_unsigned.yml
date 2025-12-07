@@ -24,9 +24,7 @@ jobs:
 
       - name: Install Pods
         run: |
-          cd PuzzleQuestMaster # CocoaPods expects to run where the project is, or we point it to it
-          # Since we generated the project in root, we run pod install in root
-          cd .. 
+          # Podfile is now in the root
           pod install --repo-update
 
       - name: Build App (Unsigned)
