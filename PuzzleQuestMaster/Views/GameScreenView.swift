@@ -12,104 +12,118 @@ struct GameScreenView: View {
     
     var body: some View {
         ZStack {
-            // Background
-            LinearGradient(gradient: Gradient(colors: [Color.primaryBlueDark, Color.primaryBlue]), startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+            backgroundView
             
             VStack(spacing: 0) {
-                // HUD Header
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("Level \(gameManager.currentLevel)")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        Text("Target: \(gameManager.targetScore)")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    
-                    Spacer()
-                    
-                    VStack {
-                        Text("\(gameManager.currentScore)")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
-                                .font(.caption)
-                            Text("\(gameManager.movesLeft)")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                        }
-                        .foregroundColor(gameManager.movesLeft < 5 ? .error500 : .white)
-                        .padding(8)
-                        .background(Color.black.opacity(0.3))
-                        .cornerRadius(12)
-                    }
-                }
-                .padding()
-                
+                hudView
                 Spacer()
-                
-                // Game Board
-                GeometryReader { geometry in
-                    let width = geometry.size.width - 32 // Padding
-                    let itemSize = (width - (CGFloat(columns - 1) * spacing)) / CGFloat(columns)
-                    
-                    VStack(spacing: spacing) {
-                        ForEach(0..<rows, id: \.self) { row in
-                            HStack(spacing: spacing) {
-                                ForEach(0..<columns, id: \.self) { col in
-                                    TileView(
-                                        piece: gameManager.getPiece(at: row, col: col),
-                                        isSelected: gameManager.selectedPosition == (row, col),
-                                        size: itemSize
-                                    )
-                                    .onTapGesture {
-                                        withAnimation(.easeInOut(duration: 0.2)) {
-                                            gameManager.handleTileTap(row: row, col: col)
-                                        }
-                                    }
+                boardView
+                Spacer()
+                boostersView
+            }
+            
+            overlayView
+        }
+    }
+    
+    // MARK: - Subviews
+    
+    private var backgroundView: some View {
+        LinearGradient(gradient: Gradient(colors: [Color.primaryBlueDark, Color.primaryBlue]), startPoint: .top, endPoint: .bottom)
+            .ignoresSafeArea()
+    }
+    
+    private var hudView: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text("Level \(gameManager.currentLevel)")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Text("Target: \(gameManager.targetScore)")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Spacer()
+            
+            VStack {
+                Text("\(gameManager.currentScore)")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                        .font(.caption)
+                    Text("\(gameManager.movesLeft)")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                }
+                .foregroundColor(gameManager.movesLeft < 5 ? .error500 : .white)
+                .padding(8)
+                .background(Color.black.opacity(0.3))
+                .cornerRadius(12)
+            }
+        }
+        .padding()
+    }
+    
+    private var boardView: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width - 32 // Padding
+            let itemSize = (width - (CGFloat(columns - 1) * spacing)) / CGFloat(columns)
+            
+            VStack(spacing: spacing) {
+                ForEach(0..<rows, id: \.self) { row in
+                    HStack(spacing: spacing) {
+                        ForEach(0..<columns, id: \.self) { col in
+                            TileView(
+                                piece: gameManager.getPiece(at: row, col: col),
+                                isSelected: gameManager.selectedPosition == (row, col),
+                                size: itemSize
+                            )
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    gameManager.handleTileTap(row: row, col: col)
                                 }
                             }
                         }
                     }
-                    .frame(width: width, height: width) // Square board
-                    .padding(.horizontal, 16)
-                    .background(Color.black.opacity(0.2))
-                    .cornerRadius(16)
-                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                 }
-                .frame(height: UIScreen.main.bounds.width) // Constrain height to width
-                
-                Spacer()
-                
-                // Boosters Footer
-                HStack(spacing: 20) {
-                    BoosterButton(icon: "💣", count: gameManager.player.boosters.bomb, action: { gameManager.useBooster(.bomb) })
-                    BoosterButton(icon: "🔀", count: gameManager.player.boosters.shuffle, action: { gameManager.useBooster(.shuffle) })
-                    BoosterButton(icon: "⚡️", count: gameManager.player.boosters.lightning, action: { gameManager.useBooster(.lightning) })
-                    BoosterButton(icon: "🎯", count: gameManager.player.boosters.target, action: { gameManager.useBooster(.target) })
-                }
-                .padding(.bottom, 30)
             }
-            
-            // Overlays
-            if gameManager.gameState == .levelComplete {
-                LevelCompleteOverlay(score: gameManager.currentScore, stars: 3) {
-                    adManager.showInterstitial()
-                    gameManager.nextLevel()
-                }
-            } else if gameManager.gameState == .gameOver {
-                GameOverOverlay {
-                    adManager.showInterstitial()
-                    gameManager.restartLevel()
-                }
+            .frame(width: width, height: width) // Square board
+            .padding(.horizontal, 16)
+            .background(Color.black.opacity(0.2))
+            .cornerRadius(16)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+        }
+        .frame(height: UIScreen.main.bounds.width) // Constrain height to width
+    }
+    
+    private var boostersView: some View {
+        HStack(spacing: 20) {
+            BoosterButton(icon: "💣", count: gameManager.player.boosters.bomb, action: { gameManager.useBooster(.bomb) })
+            BoosterButton(icon: "🔀", count: gameManager.player.boosters.shuffle, action: { gameManager.useBooster(.shuffle) })
+            BoosterButton(icon: "⚡️", count: gameManager.player.boosters.lightning, action: { gameManager.useBooster(.lightning) })
+            BoosterButton(icon: "🎯", count: gameManager.player.boosters.target, action: { gameManager.useBooster(.target) })
+        }
+        .padding(.bottom, 30)
+    }
+    
+    @ViewBuilder
+    private var overlayView: some View {
+        if gameManager.gameState == .levelComplete {
+            LevelCompleteOverlay(score: gameManager.currentScore, stars: 3) {
+                adManager.showInterstitial()
+                gameManager.nextLevel()
+            }
+        } else if gameManager.gameState == .gameOver {
+            GameOverOverlay {
+                adManager.showInterstitial()
+                gameManager.restartLevel()
             }
         }
     }

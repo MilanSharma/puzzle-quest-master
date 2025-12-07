@@ -1,3 +1,4 @@
+
 import SwiftUI
 
 @main
@@ -16,7 +17,7 @@ struct PuzzleQuestMasterApp: App {
                 .onAppear {
                     CloudSaveManager.shared.initialize()
                 }
-                .onChange(of: scenePhase) { newPhase in
+                .onChange(of: scenePhase) { oldPhase, newPhase in
                     if newPhase == .active {
                         adManager.requestTracking()
                     }
