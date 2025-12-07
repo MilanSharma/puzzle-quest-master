@@ -1,0 +1,19 @@
+
+name: PuzzleQuestMaster
+options:
+  bundleIdPrefix: com.puzzlequest
+targets:
+  PuzzleQuestMaster:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [PuzzleQuestMaster]
+    settings:
+      CODE_SIGNING_ALLOWED: NO
+      CODE_SIGNING_REQUIRED: NO
+      CODE_SIGN_IDENTITY: ""
+      AD_HOC_CODE_SIGNING_ALLOWED: NO
+      PRODUCT_BUNDLE_IDENTIFIER: com.puzzlequest.master
+      INFOPLIST_FILE: PuzzleQuestMaster/Info.plist
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
